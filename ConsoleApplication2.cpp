@@ -7,7 +7,7 @@
 #include "svpng.inc"
 #include <iostream>
 
-bool hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
+float hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
 	vec3 unit = unit_vector(r.direction() - r.origin());
 	vec3 cameraToSphere = sphereCenter - r.origin();
 	vec3  a = cross(unit,cameraToSphere);
@@ -24,9 +24,16 @@ bool hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
 		//isIntersection = true;
 	}
 	if (judge >= 0) {
-		isIntersection = true;
+		float t = (-B - sqrtf(judge)) / 2 * A;
+		return t;
+
+
+		//isIntersection = true;
 	}
-	return isIntersection;
+	else {
+		return -1;
+	}
+	//return isIntersection;
 }
 
 
@@ -35,12 +42,27 @@ vec3 color(ray r) {
 	vec3 unit = unit_vector(r.direction());// ;
 	float t = (unit.y() + sqrt(2) / 1.5) / sqrt(5);
 	vec3 skyColor = (1 - t) * vec3(1, 1, 1) + t * vec3(0.1, 0.44, 1);
-	if (hit_Sphere(r,vec3(0.5,0,-1.5),0.8)) {
+	vec3 SphereCenter = vec3(0, 0, -2.5);
+	float tt = hit_Sphere(r, SphereCenter, 0.8);
+	if (tt < 0) {
+		return skyColor;
+	}
+	else {
+		vec3 normal = r.point_at_parameter(tt) - SphereCenter;
+		normal.make_unit_vector();
+		normal = normal * 0.5f + vec3(0.5f,0.5f,0.5f);
+		//return normal;
+		return vec3(0.9f, 0.53, 0.33);
+	}
+
+
+
+	/*if (hit_Sphere(r,vec3(0.5,0,-1.5),0.8)) {
 		return vec3(0.5, 0.8, 0.4);
 	}
 	else {
 		return skyColor;
-	}
+	}*/
 	//return 
 }
 
