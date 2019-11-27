@@ -12,9 +12,9 @@ float hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
 	vec3 cameraToSphere = sphereCenter - r.origin();
 	vec3  a = cross(unit,cameraToSphere);
 	float A = pow(r.direction().length(),2);
-	float B = 2 * dot(r.direction(),r.origin() - sphereCenter);
+	float B = 2.0 * dot(r.direction(),r.origin() - sphereCenter);
 	float C = dot(r.origin() - sphereCenter, r.origin() - sphereCenter) - radius * radius;
-	float judge = B * B - 4 * A *C;
+	float judge = B * B - 4.0 * A *C;
 
 
 	bool isIntersection = false;
@@ -24,7 +24,7 @@ float hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
 		//isIntersection = true;
 	}
 	if (judge >= 0) {
-		float t = (-B - sqrtf(judge)) / 2 * A;
+		float t = (-B - sqrt(judge)) /( 2.0 * A);
 		return t;
 
 
@@ -42,17 +42,18 @@ vec3 color(ray r) {
 	vec3 unit = unit_vector(r.direction());// ;
 	float t = (unit.y() + sqrt(2) / 1.5) / sqrt(5);
 	vec3 skyColor = (1 - t) * vec3(1, 1, 1) + t * vec3(0.1, 0.44, 1);
-	vec3 SphereCenter = vec3(0, 0, -2.5);
+	vec3 SphereCenter = vec3(0, 0, -2);
 	float tt = hit_Sphere(r, SphereCenter, 0.8);
 	if (tt < 0) {
 		return skyColor;
 	}
 	else {
-		vec3 normal = r.point_at_parameter(tt) - SphereCenter;
-		normal.make_unit_vector();
+		vec3 normal = unit_vector(r.point_at_parameter(tt) - SphereCenter);
+		//normal.make_unit_vector();
+		return 0.5 * vec3(normal.x() + 1.0 , normal.y() + 1.0, normal.z() + 1.0);
 		normal = normal * 0.5f + vec3(0.5f,0.5f,0.5f);
-		//return normal;
-		return vec3(0.9f, 0.53, 0.33);
+		return normal;// vec3(pow(normal.x(), 0.45), pow(normal.y(), 0.45), pow(normal.z(), 0.45));
+		//return vec3(0.9f, 0.53, 0.33);
 	}
 
 
@@ -100,7 +101,7 @@ int main()
 
 			*p++ = (unsigned char)ir;    /* R */
 			*p++ = (unsigned char)ig;    /* G */
-			*p++ = ib;
+			*p++ = (unsigned char)ib;
 
 			
 			//std::cout << ir << " " << ig << " " << ib << "\n";
