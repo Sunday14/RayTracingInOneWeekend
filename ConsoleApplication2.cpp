@@ -5,66 +5,82 @@
 //#include "vec3.h"
 #include "ray.h"
 #include "svpng.inc"
+#include "sphere.h"
+#include "hitable_list.h"
 #include <iostream>
 
-float hit_Sphere(ray r ,vec3 sphereCenter,float radius) {
+#define MAXFLOAT 1000.0
+
+float hit_Sphere(const vec3& sphereCenter,float radius, ray r) {
 	vec3 unit = unit_vector(r.direction() - r.origin());
-	vec3 cameraToSphere = sphereCenter - r.origin();
-	vec3  a = cross(unit,cameraToSphere);
-	float A = pow(r.direction().length(),2);
-	float B = 2.0 * dot(r.direction(),r.origin() - sphereCenter);
-	float C = dot(r.origin() - sphereCenter, r.origin() - sphereCenter) - radius * radius;
-	float judge = B * B - 4.0 * A *C;
+	vec3 oc = r.origin() - sphereCenter;
+	//vec3 cameraToSphere = sphereCenter - r.origin();
+	float  a =  dot(r.direction(),r.direction());// cross(unit, cameraToSphere);
+	//float A = pow(r.direction().length(),2);
+	float b = 2 * dot(r.direction(),r.origin() - sphereCenter);
+	float c = dot(r.origin() - sphereCenter, r.origin() - sphereCenter) - radius * radius;
+	float discriminant = b * b - 4 * a *c;
 
-
-	bool isIntersection = false;
-
-
-	if (a.length() <= radius) {
-		//isIntersection = true;
-	}
-	if (judge >= 0) {
-		float t = (-B - sqrt(judge)) /( 2.0 * A);
-		return t;
-
-
-		//isIntersection = true;
+	if (discriminant < 0) {
+		return -1.0;
 	}
 	else {
-		return -1;
+		return (-b - sqrt(discriminant)) / (2.0*a);
 	}
+
+
+	//bool isIntersection = false;
+
+
+	//if (a.length() <= radius) {
+	//	//isIntersection = true;
+	//}
+	//if (judge >= 0) {
+	//	isIntersection = true;
+	//}
+	//if (isIntersection) {
+	//	return (-B - sqrt(judge)) / (2.0*A);
+	//}
+	//else {
+	//	return -1.0;
+	//}
 	//return isIntersection;
 }
 
 
 
-vec3 color(ray r) {
-	vec3 unit = unit_vector(r.direction());// ;
-	float t = (unit.y() + sqrt(2) / 1.5) / sqrt(5);
-	vec3 skyColor = (1 - t) * vec3(1, 1, 1) + t * vec3(0.1, 0.44, 1);
-	vec3 SphereCenter = vec3(0, 0, -2);
-	float tt = hit_Sphere(r, SphereCenter, 0.8);
-	if (tt < 0) {
-		return skyColor;
-	}
-	else {
-		vec3 normal = unit_vector(r.point_at_parameter(tt) - SphereCenter);
-		//normal.make_unit_vector();
-		return 0.5 * vec3(normal.x() + 1.0 , normal.y() + 1.0, normal.z() + 1.0);
-		normal = normal * 0.5f + vec3(0.5f,0.5f,0.5f);
-		return normal;// vec3(pow(normal.x(), 0.45), pow(normal.y(), 0.45), pow(normal.z(), 0.45));
-		//return vec3(0.9f, 0.53, 0.33);
-	}
+vec3 color_1(ray r) {
+	//vec3 unit = unit_vector(r.direction());// ;
+	//float t = (unit.y() + sqrt(2) / 1.5) / sqrt(5);
+	//vec3 skyColor = (1 - t) * vec3(1, 1, 1) + t * vec3(0.1, 0.44, 1);
+	float t = hit_Sphere( vec3(0.0, 0, -1), 0.5, r);
 
+	if (t > 0.0) {
+		vec3 N = unit_vector(r.point_at_parameter(t) - vec3(0,0,-1));
+		return 0.5 * vec3(N.x() + 1 ,N.y() + 1,N.z() +1);
 
-
-	/*if (hit_Sphere(r,vec3(0.5,0,-1.5),0.8)) {
-		return vec3(0.5, 0.8, 0.4);
+		//return vec3(0.5, 0.8, 0.4);
 	}
-	else {
-		return skyColor;
-	}*/
+	//else {
+		//return skyColor;
+	//}
 	//return 
+	vec3 unit_direction = unit_vector(r.direction());
+	t = 0.5*(unit_direction.y() + 1.0);
+	return (1.0 - t) *vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+}
+
+
+vec3 color(const ray& r,hitable * world) {
+	hit_record rec;
+	if (world->hit(r, 0.0, MAXFLOAT, rec)) {
+		return  0.5*vec3(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
+	}
+	else {
+		vec3 unit_direction = unit_vector(r.direction());
+		float t = 0.5*(unit_direction.y() + 1.0);
+		return (1.0 - t) *vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+	}
 }
 
 int main()
@@ -75,11 +91,21 @@ int main()
 	vec3 camera(0, 0, 0);
 	float width = 4;
 	float height = 2;
-	vec3 leftBottomCorner(-2,-1,-0.7);
+
+	vec3 horizotal(4.0, 0.0, 0.0);
+	vec3 vertical(0.0, 2.0, 0.0);
+	vec3 leftBottomCorner(-2,-1,-1.0);
 
 	//vec3 lefrBottomCorner();
 	FILE *fp = fopen("rgb.png", "wb");
-	unsigned char rgb[nx * ny * 3], *p = rgb;
+
+	hitable *list[2];
+	list[0] = new sphere(vec3(0,0,-1),0.5);
+	list[1] = new sphere(vec3(0, -100.5, -1), 100);
+
+	hitable *world = new hitable_list(list, 2);
+
+	unsigned char rgb[nx * ny * 3], *cc = rgb;
 	for (int j = ny - 1; j >= 0; j--) {
 		for (int i = 0; i < nx; i++) {
 			
@@ -89,19 +115,20 @@ int main()
 			//float b = 0;// float(j*i) * 2 / float(ny*ny);
 			float u = float(i) / float(nx);
 			float v = float(j) / float(ny);
-			ray r(camera, leftBottomCorner +vec3( u * width,v*height,0));
+			ray r(camera, leftBottomCorner +u*horizotal + v * vertical);
 
 			
 
-
-			vec3 col = color(r);
+			vec3 p = r.point_at_parameter(2.0);
+			vec3 col = color(r, world);
+			//col = color_1(r);
 			int ir = int(255.99*col[0]);
 			int ig = int(255.99*col[1]);
 			int ib = int(255.99*col[2]);
 
-			*p++ = (unsigned char)ir;    /* R */
-			*p++ = (unsigned char)ig;    /* G */
-			*p++ = (unsigned char)ib;
+			*cc++ = (unsigned char)ir;    /* R */
+			*cc++ = (unsigned char)ig;    /* G */
+			*cc++ = ib;
 
 			
 			//std::cout << ir << " " << ig << " " << ib << "\n";
