@@ -7,6 +7,7 @@
 #include "svpng.inc"
 #include "sphere.h"
 #include "hitable_list.h"
+#include "material.h"
 #include <iostream>
 #include <time.h>
 #define MAXFLOAT 1000.0
@@ -74,25 +75,7 @@ vec3 color_1(ray r) {
 }
 
 
-double Rands() {
-	return float(rand()) / float(RAND_MAX + 1.0);
-}
 
-vec3 random_in_sphere() {
-	vec3 p;
-	do {
-		p = 2.0* vec3(Rands(), Rands(), Rands()) - vec3(1, 1, 1);
-	}while(p.squared_length() >= 1.0);
-	return p;
-}
-
-vec3 random_in_unit_sphere() {
-	vec3 p;
-	do {
-		p = 2.0*vec3(Rands(), Rands(), Rands()) - vec3(1, 1, 1);
-	} while (p.squared_length() >= 1.0);
-	return p;
-}
 
 vec3 color_2(const ray& r,hitable * world) {
 	hit_record rec;
@@ -106,16 +89,39 @@ vec3 color_2(const ray& r,hitable * world) {
 	}
 }
 
-vec3 color(const ray& r,hitable *world) {
+vec3 color_3(const ray& r,hitable *world) {
 	hit_record rec;
 	if (world->hit(r, 0.001, MAXFLOAT, rec)) {
 		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-		return 0.5*color(ray(rec.p,target-rec.p),world);
+		return 0.5*color_3(ray(rec.p,target-rec.p),world);
 	}
 	else {
 		vec3 unit_direction = unit_vector(r.direction());
 		float t = 0.5*(unit_direction.y() + 1.0);
 		return (1.0 - t) *vec3(1.0, 1.0, 1.0) + t * vec3(0.9, 0.3, 0.2);
+	}
+}
+
+vec3 color(const ray& r, hitable *world,int depth) {
+
+	hit_record rec;
+	if (world->hit(r, 0.0, MAXFLOAT, rec))
+	{
+		ray scattered;
+		vec3 attenuation;
+		if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+		{
+			return attenuation * color(scattered, world, depth + 1);
+		}
+		else
+		{
+			return vec3(0, 0, 0);
+		}
+	}
+	else {
+		vec3 unit_direction = unit_vector(r.direction());
+		float t = 0.5*(unit_direction.y() + 1.0);
+		return (1.0 - t) *vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 	}
 }
 
@@ -125,7 +131,7 @@ int main()
 {
 	const int nx = 600;
 	const int ny = 300;
-	int ns = 100;
+	int ns = 10000;
 	std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 	//vec3 camera(0, 0, 0);
 	float width = 4;
@@ -138,11 +144,12 @@ int main()
 	//vec3 lefrBottomCorner();
 	FILE *fp = fopen("rgb.png", "wb");
 
-	hitable *list[2];
-	list[0] = new sphere(vec3(0,0,-1),0.5);
-	list[1] = new sphere(vec3(0, -100.5, -1), 100);
-
-	hitable *world = new hitable_list(list, 2);
+	hitable *list[4];
+	list[0] = new sphere(vec3(0,0,-1.5),0.5, new lambertian(vec3(0.8, 0.1, 0.1)));
+	list[1] = new sphere(vec3(0, -100.5, -1.5), 100, new lambertian(vec3(0.1, 0.8, 0.5)));
+	list[2] = new sphere(vec3(1, 0, -1.5), 0.5, new metal(vec3(0.8, 0.7, 0.1),1.0));
+	list[3] = new sphere(vec3(-1, 0, -1.5), 0.5, new metal(vec3(0.8, 0.8, 0.8),0.03));
+	hitable *world = new hitable_list(list, 4);
 
 	camera cam;
 	srand((unsigned)time(NULL));
@@ -164,7 +171,7 @@ int main()
 				float v = float(j + Rands()) / float(ny);
 				ray r = cam.get_ray(u,v);
 				vec3 p = r.point_at_parameter(2.0);
-				col += color(r,world);
+				col += color(r,world,0);
 			}
 			col /= float(ns);
 			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
