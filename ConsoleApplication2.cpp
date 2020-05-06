@@ -131,7 +131,7 @@ int main()
 {
 	const int nx = 600;
 	const int ny = 300;
-	int ns = 1000;
+	int ns = 100;
 	std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 	//vec3 camera(0, 0, 0);
 	float width = 4;
@@ -148,7 +148,7 @@ int main()
 	list[0] = new sphere(vec3(0,0,-1.5),0.5, new lambertian(vec3(0.8, 0.1, 0.1)));
 	list[1] = new sphere(vec3(0, -100.5, -1.5), 100, new lambertian(vec3(0.1, 0.8, 0.5)));
 	list[2] = new sphere(vec3(1, 0, -1.5), 0.5, new metal(vec3(0.8, 0.7, 0.1),1.0));
-	list[3] = new sphere(vec3(-1, 0, -1.5), 0.5, new metal(vec3(0.8, 0.8, 0.8),0.03));
+	list[3] = new sphere(vec3(-1, 0, -1.5), 0.5, new dielectric(1.5));
 	hitable *world = new hitable_list(list, 4);
 
 	camera cam;
