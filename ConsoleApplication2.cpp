@@ -131,7 +131,7 @@ int main()
 {
 	const int nx = 600;
 	const int ny = 300;
-	int ns = 10000;
+	int ns = 1000;
 	std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 	//vec3 camera(0, 0, 0);
 	float width = 4;
