@@ -34,6 +34,5 @@ public:
 	vec3 vertical;
 };
 
-
 #endif // !RAYH
 
